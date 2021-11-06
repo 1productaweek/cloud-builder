@@ -1,23 +1,26 @@
-#ubuntu16_04
-FROM launcher.gcr.io/google/ubuntu1804
+# FROM launcher.gcr.io/google/ubuntu1804
+FROM ubuntu:groovy
+
+ARG DEBIAN_FRONTEND=noninteractive
 
 # Node
-RUN curl -sL https://deb.nodesource.com/setup_12.x | bash -
-RUN apt-get update && apt-get install -y nodejs
-
+RUN curl -sL https://deb.nodesource.com/setup_16.x | bash -
+RUN apt-get -y update && apt-get install -y nodejs curl gnupg
 RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && apt update && apt install yarn
 
 # Util
 RUN apt-get -y update && \
-    apt-get -y install wget ca-certificates curl
+    apt-get -y install wget ca-certificates jq zip \ 
+    # add codecs needed for video playback in firefox
+    # https://github.com/cypress-io/cypress-docker-images/issues/150
+    mplayer
 
 # Chrome
-RUN apt-get -y update && \
-apt-get install -yq gconf-service libasound2 libatk1.0-0 libatk-bridge2.0-0 libc6 libcairo2 libcups2 libdbus-1-3 \
+RUN apt-get install -yq gconf-service libasound2 libatk1.0-0 libatk-bridge2.0-0 libc6 libcairo2 libcups2 libdbus-1-3 \
 libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libnspr4 libpango-1.0-0 \
 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 libxext6 \
 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 ca-certificates fonts-liberation libappindicator1 \
-libnss3 lsb-release xdg-utils wget
+libnss3 lsb-release xdg-utils
 
 
 # Cypress
@@ -29,18 +32,10 @@ RUN wget -O /usr/src/google-chrome-stable_current_amd64.deb "http://dl.google.co
   dpkg -i /usr/src/google-chrome-stable_current_amd64.deb ; \
   apt-get install -f -y && \
   rm -f /usr/src/google-chrome-stable_current_amd64.deb
-RUN google-chrome --version
 
 # "fake" dbus address to prevent errors
 # https://github.com/SeleniumHQ/docker-selenium/issues/87
 ENV DBUS_SESSION_BUS_ADDRESS=/dev/null
-
-# Add zip utility - it comes in very handy
-RUN apt-get update && apt-get install -y zip
-
-# add codecs needed for video playback in firefox
-# https://github.com/cypress-io/cypress-docker-images/issues/150
-RUN apt-get install mplayer -y
 
 # install Firefox browser
 ARG FIREFOX_VERSION=81.0
@@ -52,12 +47,11 @@ RUN wget --no-verbose -O /tmp/firefox.tar.bz2 https://download-installer.cdn.moz
 
 
 # Kubectl
-RUN apt-get -y update && \
-    apt-get install -y apt-transport-https gnupg2 && \
-    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
-    echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list I && \
-    apt-get -y update && \
-    apt-get install -y kubectl
+# RUN apt-get install -y apt-transport-https gnupg2 && \
+#    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
+#    echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list I && \
+#    apt-get -y update && \
+#    apt-get install -y kubectl
 
 
 # K6
@@ -66,13 +60,14 @@ RUN apt-get -y update && \
 #    apt-get -y update && \
 #    apt-get -y install k6
 
-
 # Docker
-RUN apt-get -y update && \
-    apt-get -y install \
+RUN apt-get -y install \
+        # For multi-arch
+        binfmt-support qemu-user-static \
+        # Needed by Docker install
         apt-transport-https \
         ca-certificates \
-        curl \
+        # curl \
         make \
         software-properties-common && \
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
@@ -82,25 +77,28 @@ RUN apt-get -y update && \
        xenial \
        edge" && \
     apt-get -y update && \
-    apt-get -y install docker-ce=5:18.09.6~3-0~ubuntu-xenial
+    apt-get -y install docker-ce
+
+COPY --from=docker/buildx-bin:latest /buildx /usr/libexec/docker/cli-plugins/docker-buildx
+
 
 # GCLOUD SDK
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg  add - && apt-get update -y && apt-get install google-cloud-sdk -y  
 
 
-RUN curl -o cloud_sql_proxy https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64
-RUN chmod +x cloud_sql_proxy
-RUN mkdir /cloudsql; chmod 777 /cloudsql
+# RUN curl -o cloud_sql_proxy https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 && \
+#  chmod +x cloud_sql_proxy && \
+#  mkdir /cloudsql; chmod 777 /cloudsql
 
 # BW
-COPY bw /usr/bin
-RUN chmod +x /usr/bin/bw
-RUN apt-get update -y && apt-get install jq -y
+# COPY bw /usr/bin
+# RUN chmod +x /usr/bin/bw
 
+# AWS
+RUN apt-get -y update && apt-get install -y python3 python3-pip && \
+  pip3 install --upgrade ecs-deploy awscli
 
 # Deploy
-RUN npm config set unsafe-perm true
-RUN npm install netlify-cli -g
-RUN npm install -g firebase-tools
-RUN npm install -g @sentry/cli
-RUN npm install -g lerna
+# RUN npm config set unsafe-perm true
+RUN yarn global add --unsafe-perm=true @sentry/cli lerna netlify-cli
+  # firebase-tools

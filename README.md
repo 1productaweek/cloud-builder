@@ -18,6 +18,13 @@ Contains the following libraries:
 * ✅ Lerna - for monorepo deployment
 
 
+### Build
+
+```
+docker buildx build --build-arg BUILDKIT_INLINE_CACHE=1 --platform linux/amd64 -t calummoore/cloud-builder --push .
+```
+
+
 ### Made by 1PAW
 
 https://1productaweek.com
