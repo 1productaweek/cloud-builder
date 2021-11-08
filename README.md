@@ -11,7 +11,7 @@ Contains the following libraries:
 * ✅ Docker - to build docker images
 * ✅ GCloud SDK - to upload/deploy docker images, etc
 * ✅ GCP SQL Proxy - for communicating with a GCP Cloud instance
-* ✅ Bitwarden - for getting secrets for a given environment
+* ❌ Bitwarden - for getting secrets for a given environment
 * ✅ Netlify - to deploy web assets
 * ✅ Firebase Tools - to deploy firebase - rules, functions, etc
 * ✅ Sentry - for publishing new releases

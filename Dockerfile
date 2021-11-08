@@ -4,8 +4,9 @@ FROM ubuntu:groovy
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Node
+RUN apt-get -y update && apt-get install -y curl
 RUN curl -sL https://deb.nodesource.com/setup_16.x | bash -
-RUN apt-get -y update && apt-get install -y nodejs curl gnupg
+RUN apt-get -y update && apt-get install -y nodejs
 RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && apt update && apt install yarn
 
 # Util
@@ -43,8 +44,6 @@ RUN wget --no-verbose -O /tmp/firefox.tar.bz2 https://download-installer.cdn.moz
   && tar -C /opt -xjf /tmp/firefox.tar.bz2 \
   && rm /tmp/firefox.tar.bz2 \
   && ln -fs /opt/firefox/firefox /usr/bin/firefox
-
-
 
 # Kubectl
 # RUN apt-get install -y apt-transport-https gnupg2 && \
@@ -95,10 +94,10 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.c
 # RUN chmod +x /usr/bin/bw
 
 # AWS
-RUN apt-get -y update && apt-get install -y python3 python3-pip && \
-  pip3 install --upgrade ecs-deploy awscli
+#RUN apt-get -y update && apt-get install -y python3 python3-pip && \
+#  pip3 install --upgrade ecs-deploy awscli
 
 # Deploy
 # RUN npm config set unsafe-perm true
-RUN yarn global add --unsafe-perm=true @sentry/cli lerna netlify-cli
-  # firebase-tools
+RUN npm --version
+RUN npm install -g @sentry/cli lerna netlify-cli firebase-tools
